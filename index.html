@@ -834,7 +834,7 @@ function onOpenCvReady(){
 document.addEventListener('DOMContentLoaded',function(){
   initEventListeners();loadSavedData();updateSettingsUI();
   document.getElementById('sessionStart').textContent=sessionStart.toLocaleTimeString();
-  startCamera();
+
 });
 
 function initEventListeners(){
@@ -879,6 +879,31 @@ function toggleSetting(toggleId,settingKey){
 // CAMERA (unchanged logic)
 // ========================================
 async function startCamera(){
+  const overlay=document.getElementById('cameraOverlay');
+
+  // Show permission request UI
+  overlay.classList.remove('hidden');
+  overlay.innerHTML=`
+    <div style="text-align:center;padding:24px">
+      <div style="font-size:40px;margin-bottom:14px">📷</div>
+      <div style="font-size:14px;font-family:'DM Mono',monospace;color:var(--text);margin-bottom:6px">Camera Permission Required</div>
+      <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);margin-bottom:20px;line-height:1.8">MicroX needs camera access<br>to perform live cell detection.</div>
+      <button onclick="requestCameraPermission()" style="padding:10px 24px;background:var(--accent);border:none;border-radius:var(--radius);color:#fff;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;font-weight:500">Allow Camera Access</button>
+    </div>
+  `;
+}
+
+async function requestCameraPermission(){
+  const overlay=document.getElementById('cameraOverlay');
+
+  // Show requesting state
+  overlay.innerHTML=`
+    <div style="text-align:center">
+      <div class="spinner" style="margin:0 auto 14px"></div>
+      <div style="font-size:12px;font-family:'DM Mono',monospace;color:var(--text2)">Requesting camera access...</div>
+    </div>
+  `;
+
   try{
     const constraints={video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:60}}};
     videoStream=await navigator.mediaDevices.getUserMedia(constraints);
@@ -888,12 +913,24 @@ async function startCamera(){
     videoTrack=videoStream.getVideoTracks()[0];
     video.onloadedmetadata=()=>{
       canvas.width=video.videoWidth;canvas.height=video.videoHeight;
-      document.getElementById('cameraOverlay').classList.add('hidden');
-      showNotification('Camera ready','success');updatePanDisplay();
+      overlay.classList.add('hidden');
+      showNotification('Camera ready','success');
+      updatePanDisplay();
     };
     updateZoom();
   }catch(error){
-    document.getElementById('cameraOverlay').innerHTML='<div style="text-align:center"><div style="font-size:36px;margin-bottom:12px;opacity:0.4">📷</div><div style="font-size:12px;font-family:DM Mono,monospace;color:var(--text2)">Camera access required</div></div>';
+    let msg='Camera access denied.';
+    if(error.name==='NotAllowedError')msg='Permission denied. Please allow camera access in your browser settings.';
+    else if(error.name==='NotFoundError')msg='No camera found on this device.';
+    else if(error.name==='NotReadableError')msg='Camera is in use by another application.';
+
+    overlay.innerHTML=`
+      <div style="text-align:center;padding:24px">
+        <div style="font-size:36px;margin-bottom:12px">⚠️</div>
+        <div style="font-size:12px;font-family:'DM Mono',monospace;color:var(--red);margin-bottom:16px;line-height:1.8;max-width:220px">${msg}</div>
+        <button onclick="requestCameraPermission()" style="padding:8px 20px;background:transparent;border:1px solid var(--border2);border-radius:var(--radius);color:var(--text2);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer">Try Again</button>
+      </div>
+    `;
   }
 }
 
