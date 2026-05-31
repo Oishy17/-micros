@@ -236,31 +236,85 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 
 /* RESPONSIVE */
 @media(max-width:768px){
-.shell{grid-template-columns:1fr;grid-template-rows:56px auto 1fr}
-.sidebar{grid-row:2;grid-column:1;flex-direction:row;overflow-x:auto;padding:0;border-right:none;border-bottom:1px solid var(--border)}
-.sidebar-section,.sidebar-divider,.sidebar-stats{display:none}
-.nav-item{flex-direction:column;gap:4px;padding:10px 14px;font-size:10px;min-width:64px;border-radius:0}
-.nav-item.active::before{top:auto;bottom:0;left:8px;right:8px;width:auto;height:2px;border-radius:2px 2px 0 0}
-.metric-row{grid-template-columns:repeat(2,1fr)}
-.result-row{grid-template-columns:repeat(2,1fr)}
-.export-grid{grid-template-columns:repeat(2,1fr)}
-.help-grid{grid-template-columns:1fr}
-.page{padding:16px}
-.slider-row{grid-template-columns:1fr}
-}
-@media(max-width:480px){
-.topbar{padding:0 12px;gap:8px}
+.shell{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;min-height:100vh}
+
+/* TOPBAR */
+.topbar{flex-wrap:wrap;padding:8px 12px;gap:6px;height:auto}
 .logo-sub{display:none}
-.topbar-actions{gap:4px}
-.topbar-btn{padding:5px 8px;font-size:11px}
-.page-header{flex-direction:column;gap:12px}
-.page-actions{flex-wrap:wrap}
-.metric-row{grid-template-columns:1fr 1fr}
-.result-row{grid-template-columns:1fr 1fr}
-.page{padding:12px}
-.camera-viewport{min-height:240px}
-.stats-overlay{grid-template-columns:1fr;gap:8px}
+.topbar-center{order:3;width:100%;padding:4px 0}
+.status-pill{width:100%;justify-content:center}
+.topbar-actions{order:2;flex-wrap:wrap;gap:4px}
+.topbar-btn{padding:5px 10px;font-size:11px}
+
+/* SIDEBAR becomes bottom nav */
+.sidebar{grid-row:2;grid-column:1;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:0;border-right:none;border-bottom:1px solid var(--border);min-height:56px}
+.sidebar-section,.sidebar-divider,.sidebar-stats{display:none}
+.nav-item{flex-direction:column;gap:3px;padding:8px 10px;font-size:9px;min-width:56px;border-radius:0;white-space:nowrap}
+.nav-item.active::before{top:auto;bottom:0;left:6px;right:6px;width:auto;height:2px;border-radius:2px 2px 0 0}
+.nav-icon{font-size:16px}
+.nav-badge{display:none}
+
+/* MAIN */
+.main{grid-row:3}
+.page{padding:12px;gap:16px}
+.page-header{flex-direction:column;gap:10px;padding-bottom:14px}
+.page-title{font-size:18px}
+.page-actions{flex-wrap:wrap;gap:6px;width:100%}
+.page-actions .ctrl-btn{flex:1;min-width:calc(50% - 3px);justify-content:center;font-size:11px;padding:7px 8px}
+
+/* METRICS */
+.metric-row{grid-template-columns:1fr 1fr;gap:8px}
+.metric{padding:12px 14px}
+.metric-value{font-size:22px}
+
+/* CAMERA */
+.camera-viewport{min-height:200px}
+.camera-toolbar{padding:8px 12px}
+.stats-overlay{gap:12px;padding:8px 10px}
 .pan-controls{display:none}
+.zoom-controls{bottom:8px;left:8px}
+.zoom-level-badge{bottom:8px;left:48px}
+.fps-badge{bottom:8px;right:8px}
+.pan-position-badge{display:none}
+
+/* GALLERY */
+.gallery-viewport{height:200px}
+.gallery-body{padding:12px}
+.result-row{grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.result-cell{padding:10px 12px}
+.result-cell-value{font-size:15px}
+
+/* FILTERS */
+.filter-viewport{height:200px}
+.filter-body{padding:12px}
+.filter-pill-row{gap:4px}
+.filter-pill{padding:4px 9px;font-size:10px}
+.slider-row{grid-template-columns:1fr;gap:12px}
+
+/* EXPORT */
+.export-grid{grid-template-columns:1fr 1fr;gap:8px}
+.export-card{padding:14px 10px}
+.export-card-icon{font-size:20px;margin-bottom:6px}
+
+/* SETTINGS */
+.settings-row{flex-direction:column;align-items:flex-start;gap:10px;padding:14px 16px}
+.settings-row-right{width:100%;justify-content:space-between}
+.settings-row-right input[type=range]{flex:1}
+
+/* HELP */
+.help-grid{grid-template-columns:1fr;gap:10px}
+.help-card{padding:14px}
+}
+
+@media(max-width:360px){
+.topbar-btn{padding:4px 7px;font-size:10px}
+.nav-item{min-width:48px;padding:6px 8px}
+.metric-row{grid-template-columns:1fr 1fr;gap:6px}
+.metric-value{font-size:18px}
+.page{padding:8px;gap:12px}
+.result-row{grid-template-columns:1fr 1fr;gap:6px}
+.export-grid{grid-template-columns:1fr 1fr;gap:6px}
+.page-actions .ctrl-btn{font-size:10px;padding:6px 6px}
 }
 </style>
 </head>
