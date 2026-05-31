@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MicroX — Microscopic Image Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+:root{
+--bg:#f4f2ee;
+--surface:#ffffff;
+--surface2:#f9f8f6;
+--surface3:#f0ede8;
+--border:#00000010;
+--border2:#00000018;
+--accent:#9a7a3e;
+--accent2:#b8953a;
+--text:#1a1c20;
+--text2:#5a5f6b;
+--text3:#9ea3af;
+--green:#2a8a5a;
+--blue:#2a6fd4;
+--red:#c03a3a;
+--amber:#b07820;
+--radius:6px;
+--radius2:10px;
+}
+
+body{font-family:'Times New Roman',serif;;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;font-size:14px;line-height:1.5}
+body.dark-mode{
+--bg:#0a0c10;--surface:#111318;--surface2:#181c23;--surface3:#1e2330;
+--border:#ffffff0f;--border2:#ffffff18;--accent:#c8a96e;--accent2:#e8c98a;
+--text:#f0ede8;--text2:#9ea3af;--text3:#5a5f6b;
+--green:#4db88a;--blue:#5b9cf6;--red:#e05c5c;--amber:#e0a03a;
+}
+
+/* LAYOUT */
+.shell{display:grid;grid-template-columns:220px 1fr;grid-template-rows:56px 1fr;min-height:100vh}
+
+/* TOPBAR */
+.topbar{grid-column:1/-1;display:flex;align-items:center;padding:0 24px;border-bottom:1px solid var(--border);background:var(--bg);gap:32px;position:sticky;top:0;z-index:100}
+.logo{font-family:'Playfair Display',serif;font-size:20px;color:var(--accent);letter-spacing:0.03em;white-space:nowrap}
+.logo-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-left:12px;padding-left:12px;border-left:1px solid var(--border2)}
+.topbar-center{flex:1;display:flex;align-items:center;gap:8px}
+.status-pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid var(--border2);border-radius:20px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text2)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--text3)}
+.status-dot.active{background:var(--green);box-shadow:0 0 0 3px rgba(77,184,138,0.2)}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.topbar-btn{padding:6px 16px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all 0.15s}
+.topbar-btn:hover{border-color:var(--accent);color:var(--accent)}
+.topbar-btn.primary{background:var(--accent);border-color:var(--accent);color:#0a0c10;font-weight:500}
+.topbar-btn.primary:hover{background:var(--accent2)}
+.topbar-btn.danger{border-color:#e05c5c44;color:var(--red)}
+.topbar-btn.danger:hover{background:#e05c5c18}
+
+/* SIDEBAR */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.sidebar-section{padding:16px 16px 8px;font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;width:100%;text-align:left;transition:all 0.15s;border-radius:0;position:relative}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{color:var(--accent);background:rgba(200,169,110,0.08)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:2px;background:var(--accent);border-radius:0 2px 2px 0}
+.nav-icon{width:16px;text-align:center;flex-shrink:0;opacity:0.7}
+.nav-item.active .nav-icon,.nav-item:hover .nav-icon{opacity:1}
+.nav-badge{margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(200,169,110,0.15);color:var(--accent)}
+.sidebar-divider{height:1px;background:var(--border);margin:8px 16px}
+.sidebar-stats{padding:16px;margin-top:auto}
+.sidebar-stat{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border)}
+.sidebar-stat:last-child{border-bottom:none}
+.sidebar-stat-label{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+.sidebar-stat-value{font-size:13px;font-weight:500;font-family:'DM Mono',monospace;color:var(--text)}
+
+/* MAIN CONTENT */
+.main{background:var(--bg);overflow-y:auto;display:flex;flex-direction:column}
+.page{display:none;flex:1;padding:28px 32px}
+.page.active{display:flex;flex-direction:column;gap:24px}
+
+/* PAGE HEADER */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.page-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:400;color:var(--text)}
+.page-subtitle{font-size:12px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace;letter-spacing:0.05em}
+.page-actions{display:flex;gap:8px;align-items:center}
+
+/* METRIC ROW */
+.metric-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.metric{border:1px solid var(--border);border-radius:var(--radius2);padding:16px 18px;background:var(--surface)}
+.metric-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px}
+.metric-value{font-size:28px;font-weight:300;color:var(--text);letter-spacing:-0.02em;line-height:1;font-family:'DM Sans',sans-serif}
+.metric-value.accent{color:var(--accent)}
+.metric-value.green{color:var(--green)}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:6px}
+
+/* SECTION LABEL */
+.section-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px}
+
+/* CAMERA VIEW */
+.camera-panel{border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden;background:var(--surface);flex:1;display:flex;flex-direction:column}
+.camera-toolbar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.camera-toolbar-title{font-size:12px;color:var(--text2);font-family:'DM Mono',monospace}
+.camera-viewport{flex:1;background:#000;position:relative;min-height:320px;display:flex;align-items:center;justify-content:center}
+.camera-footer{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--border);background:var(--surface)}
+
+/* VIDEO ELEMENTS */
+#video{width:100%;height:100%;object-fit:contain}
+#canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+.video-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--text2);gap:12px}
+.spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stats-overlay{position:absolute;top:12px;left:12px;background:rgba(10,12,16,0.85);padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border2);display:flex;gap:20px}
+.stat-ol-val{font-size:18px;font-weight:400;color:var(--green);font-family:'DM Mono',monospace}
+.stat-ol-lbl{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px}
+.detection-badge{position:absolute;top:12px;right:12px;padding:4px 10px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;background:rgba(10,12,16,0.85);border:1px solid #e05c5c44;color:var(--red)}
+.detection-badge.active{border-color:#4db88a44;color:var(--green)}
+.fps-badge{position:absolute;bottom:12px;right:12px;background:rgba(10,12,16,0.85);color:var(--text3);padding:3px 8px;border-radius:var(--radius);font-size:11px;font-family:'DM Mono',monospace}
+.zoom-level-badge{position:absolute;bottom:12px;left:56px;background:rgba(10,12,16,0.85);color:var(--text2);padding:3px 8px;border-radius:var(--radius);font-size:11px;font-family:'DM Mono',monospace}
+.pan-position-badge{position:absolute;bottom:36px;left:12px;background:rgba(10,12,16,0.85);color:var(--text3);padding:3px 8px;border-radius:var(--radius);font-size:10px;font-family:'DM Mono',monospace}
+.zoom-controls{position:absolute;bottom:12px;left:12px;display:flex;flex-direction:column;gap:4px}
+.icon-btn{width:32px;height:32px;background:rgba(10,12,16,0.85);border:1px solid var(--border2);color:var(--text2);border-radius:var(--radius);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pan-controls{position:absolute;bottom:12px;right:56px;display:grid;grid-template-columns:repeat(3,28px);grid-template-rows:repeat(3,28px);gap:3px}
+.pan-btn{width:28px;height:28px;background:rgba(10,12,16,0.85);border:1px solid var(--border2);color:var(--text2);border-radius:var(--radius);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.pan-btn:hover{border-color:var(--accent);color:var(--accent)}
+.pan-btn.center{background:rgba(200,169,110,0.15);border-color:rgba(200,169,110,0.3);color:var(--accent)}
+
+/* CONTROL STRIP */
+.control-strip{display:flex;gap:8px;flex-wrap:wrap}
+.ctrl-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.ctrl-btn:hover{border-color:var(--border2);color:var(--text);background:var(--surface2)}
+.ctrl-btn.primary{background:rgba(200,169,110,0.12);border-color:rgba(200,169,110,0.3);color:var(--accent)}
+.ctrl-btn.primary:hover{background:rgba(200,169,110,0.2)}
+.ctrl-btn.success{background:rgba(77,184,138,0.1);border-color:rgba(77,184,138,0.3);color:var(--green)}
+.ctrl-btn.danger{background:rgba(224,92,92,0.1);border-color:rgba(224,92,92,0.3);color:var(--red)}
+.ctrl-btn.warning{background:rgba(224,160,58,0.1);border-color:rgba(224,160,58,0.3);color:var(--amber)}
+
+/* GALLERY */
+.gallery-panel{border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden;background:var(--surface);display:flex;flex-direction:column}
+.gallery-viewport{background:#000;position:relative;height:320px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#imagePreview{max-width:100%;max-height:100%;object-fit:contain;display:none}
+#imageCanvas{max-width:100%;max-height:100%;object-fit:contain}
+.gallery-placeholder{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--text3)}
+.gallery-placeholder-icon{font-size:40px;opacity:0.3}
+.gallery-placeholder-text{font-size:12px;font-family:'DM Mono',monospace}
+.gallery-body{padding:20px}
+.result-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.result-cell{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.result-cell-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px}
+.result-cell-value{font-size:18px;font-weight:400;color:var(--accent);font-family:'DM Mono',monospace}
+
+/* FILTER */
+.filter-panel{border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden;background:var(--surface);display:flex;flex-direction:column}
+.filter-viewport{background:#000;height:280px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+#filterPreview{max-width:100%;max-height:100%;object-fit:contain;display:none}
+#filterCanvas{max-width:100%;max-height:100%;object-fit:contain}
+.filter-placeholder{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--text3)}
+.filter-body{padding:20px}
+.filter-pill-row{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.filter-pill{padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.15s}
+.filter-pill:hover{border-color:var(--border2);color:var(--text2)}
+.filter-pill.active{border-color:rgba(200,169,110,0.4);background:rgba(200,169,110,0.1);color:var(--accent)}
+.slider-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+.slider-group{display:flex;flex-direction:column;gap:6px}
+.slider-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);display:flex;justify-content:space-between}
+.slider-val{color:var(--accent)}
+input[type=range]{width:100%;height:2px;background:var(--border2);border-radius:1px;outline:none;-webkit-appearance:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);border:none;cursor:pointer}
+
+/* EXPORT */
+.export-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.export-card{border:1px solid var(--border);border-radius:var(--radius2);padding:20px 16px;background:var(--surface);cursor:pointer;transition:all 0.15s;text-align:center}
+.export-card:hover{border-color:var(--border2);background:var(--surface2)}
+.export-card-icon{font-size:24px;margin-bottom:10px;opacity:0.7}
+.export-card-label{font-size:13px;color:var(--text);margin-bottom:4px}
+.export-card-desc{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+.export-status-box{border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;background:var(--surface);margin-top:16px}
+.export-status-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px}
+.export-status-val{font-size:13px;color:var(--green);font-family:'DM Mono',monospace}
+
+/* SETTINGS */
+.settings-list{display:flex;flex-direction:column;gap:1px;border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:var(--surface);border-bottom:1px solid var(--border);gap:20px}
+.settings-row:last-child{border-bottom:none}
+.settings-row-left{}
+.settings-row-title{font-size:13px;color:var(--text);margin-bottom:3px}
+.settings-row-desc{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+.settings-row-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.settings-val{font-size:12px;font-family:'DM Mono',monospace;color:var(--accent);min-width:36px;text-align:right}
+.toggle{position:relative;width:36px;height:20px;background:var(--border2);border-radius:10px;cursor:pointer;transition:background 0.2s}
+.toggle.active{background:var(--accent)}
+.toggle-knob{position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform 0.2s}
+.toggle.active .toggle-knob{transform:translateX(16px)}
+
+/* HELP */
+.help-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.help-card{border:1px solid var(--border);border-radius:var(--radius2);padding:20px;background:var(--surface)}
+.help-card-title{font-size:13px;color:var(--accent);margin-bottom:10px;font-weight:500}
+.help-card-body{font-size:12px;color:var(--text2);line-height:1.8;font-family:'DM Mono',monospace}
+.help-contact{border:1px solid var(--border);border-radius:var(--radius2);padding:18px 20px;background:var(--surface);margin-top:4px}
+
+/* ANALYSIS */
+.analysis-panel{border:1px solid var(--border);border-radius:var(--radius2);background:var(--surface);padding:20px}
+.history-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'DM Mono',monospace}
+.history-table th{text-align:left;color:var(--text3);font-weight:400;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;padding:0 0 10px;border-bottom:1px solid var(--border)}
+.history-table td{padding:10px 0;color:var(--text2);border-bottom:1px solid var(--border)}
+.history-table tr:last-child td{border-bottom:none}
+.history-table td:first-child{color:var(--text3)}
+
+/* NOTIFICATION */
+.notif{position:fixed;top:68px;left:50%;transform:translateX(-50%);padding:9px 18px;border-radius:var(--radius);font-size:12px;font-family:'DM Mono',monospace;z-index:9999;pointer-events:none;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);white-space:nowrap}
+.notif.success{background:rgba(77,184,138,0.1);border-color:rgba(77,184,138,0.3);color:var(--green)}
+.notif.error{background:rgba(224,92,92,0.1);border-color:rgba(224,92,92,0.3);color:var(--red)}
+.notif.warning{background:rgba(224,160,58,0.1);border-color:rgba(224,160,58,0.3);color:var(--amber)}
+@keyframes notifIn{from{top:56px;opacity:0}to{top:68px;opacity:1}}
+@keyframes notifOut{from{top:68px;opacity:1}to{top:56px;opacity:0}}
+
+/* LOADING OVERLAY */
+.opencv-loading{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,12,16,0.95);display:flex;align-items:center;justify-content:center;z-index:2000;flex-direction:column;gap:16px}
+.opencv-loading-panel{text-align:center;padding:36px 48px;border:1px solid var(--border2);border-radius:var(--radius2);background:var(--surface)}
+.opencv-loading-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--text);margin-bottom:6px}
+.opencv-loading-sub{font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:20px}
+.progress-track{width:240px;height:2px;background:var(--border2);border-radius:1px;margin:0 auto}
+.progress-fill{height:100%;background:var(--accent);border-radius:1px;width:0%;transition:width 0.3s}
+.progress-status{font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);margin-top:10px}
+
+/* HIDDEN */
+.hidden{display:none!important}
+
+/* SCROLL */
+.main::-webkit-scrollbar,.sidebar::-webkit-scrollbar{width:4px}
+.main::-webkit-scrollbar-track,.sidebar::-webkit-scrollbar-track{background:transparent}
+.main::-webkit-scrollbar-thumb,.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+.shell{grid-template-columns:1fr;grid-template-rows:56px auto 1fr}
+.sidebar{grid-row:2;grid-column:1;flex-direction:row;overflow-x:auto;padding:0;border-right:none;border-bottom:1px solid var(--border)}
+.sidebar-section,.sidebar-divider,.sidebar-stats{display:none}
+.nav-item{flex-direction:column;gap:4px;padding:10px 14px;font-size:10px;min-width:64px;border-radius:0}
+.nav-item.active::before{top:auto;bottom:0;left:8px;right:8px;width:auto;height:2px;border-radius:2px 2px 0 0}
+.metric-row{grid-template-columns:repeat(2,1fr)}
+.result-row{grid-template-columns:repeat(2,1fr)}
+.export-grid{grid-template-columns:repeat(2,1fr)}
+.help-grid{grid-template-columns:1fr}
+.page{padding:16px}
+.slider-row{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+.topbar{padding:0 12px;gap:8px}
+.logo-sub{display:none}
+.topbar-actions{gap:4px}
+.topbar-btn{padding:5px 8px;font-size:11px}
+.page-header{flex-direction:column;gap:12px}
+.page-actions{flex-wrap:wrap}
+.metric-row{grid-template-columns:1fr 1fr}
+.result-row{grid-template-columns:1fr 1fr}
+.page{padding:12px}
+.camera-viewport{min-height:240px}
+.stats-overlay{grid-template-columns:1fr;gap:8px}
+.pan-controls{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div style="display:flex;align-items:baseline;gap:0">
+      <span class="logo">MicroX</span>
+      <span class="logo-sub">Microscopic Analysis System</span>
+    </div>
+    <div class="topbar-center">
+      <div class="status-pill">
+        <div class="status-dot" id="cvStatusDot"></div>
+        <span id="cvStatusText">Initializing engine...</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="goHome()">Home</button>
+      <button class="topbar-btn primary" onclick="startAnalysis()">Start Analysis</button>
+      <button class="topbar-btn danger" onclick="stopAnalysis()">Stop</button>
+      <button class="topbar-btn" onclick="exitApp()">Exit</button>
+      <button class="topbar-btn" onclick="toggleClinicalMode()" id="modeBtn">☀ Light</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section">Navigation</div>
+
+    <button class="nav-item active" onclick="showPage('camera')">
+      <span class="nav-icon">📷</span> Camera
+    </button>
+    <button class="nav-item" onclick="showPage('gallery')">
+      <span class="nav-icon">🖼</span> Gallery
+    </button>
+    <button class="nav-item" onclick="showPage('analysis')">
+      <span class="nav-icon">📊</span> Analysis
+      <span class="nav-badge" id="historyBadge">0</span>
+    </button>
+    <button class="nav-item" onclick="showPage('filters')">
+      <span class="nav-icon">🔍</span> Filters
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">System</div>
+
+    <button class="nav-item" onclick="showPage('export')">
+      <span class="nav-icon">📤</span> Export
+    </button>
+    <button class="nav-item" onclick="showPage('settings')">
+      <span class="nav-icon">⚙</span> Settings
+    </button>
+    <button class="nav-item" onclick="showPage('help')">
+      <span class="nav-icon">❓</span> Help
+    </button>
+
+    <div class="sidebar-stats">
+      <div class="sidebar-stat">
+        <span class="sidebar-stat-label">Live Cells</span>
+        <span class="sidebar-stat-value" id="sidebarLive">—</span>
+      </div>
+      <div class="sidebar-stat">
+        <span class="sidebar-stat-label">Image Cells</span>
+        <span class="sidebar-stat-value" id="sidebarImage">—</span>
+      </div>
+      <div class="sidebar-stat">
+        <span class="sidebar-stat-label">Readings</span>
+        <span class="sidebar-stat-value" id="sidebarReadings">0</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- CAMERA PAGE -->
+    <section class="page active" id="page-camera">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Live Camera</div>
+          <div class="page-subtitle">Real-time cell detection via OpenCV</div>
+        </div>
+        <div class="page-actions">
+          <button class="ctrl-btn primary" onclick="startLiveDetection()" id="startDetectBtn">▶ Start Detection</button>
+          <button class="ctrl-btn success" onclick="captureSnapshot()">📸 Capture</button>
+          <button class="ctrl-btn" onclick="toggleFlash()" id="flashBtn">⚡ Flash Off</button>
+        </div>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric">
+          <div class="metric-label">Total Cells</div>
+          <div class="metric-value green" id="liveTotal">0</div>
+          <div class="metric-sub">Current frame</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Detection Status</div>
+          <div class="metric-value" id="detectionStatusMetric" style="font-size:14px;padding-top:8px;color:var(--text3)">Inactive</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Zoom Level</div>
+          <div class="metric-value accent" id="zoomMetric">1.0×</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Frame Rate</div>
+          <div class="metric-value" id="fpsMetric">— fps</div>
+        </div>
+      </div>
+
+      <div class="camera-panel">
+        <div class="camera-toolbar">
+          <span class="camera-toolbar-title">VIEWPORT</span>
+          <div style="flex:1"></div>
+          <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text3)" id="panPosition">Pan: 0, 0</div>
+        </div>
+        <div class="camera-viewport">
+          <video id="video" autoplay playsinline></video>
+          <canvas id="canvas"></canvas>
+
+          <div class="stats-overlay">
+            <div>
+              <div class="stat-ol-val" id="cameraTotal">0</div>
+              <div class="stat-ol-lbl">Cells</div>
+            </div>
+          </div>
+
+          <div class="detection-badge" id="detectionStatus">DETECTION: OFF</div>
+          <div class="fps-badge">FPS: <span id="fpsDisplay">0</span></div>
+          <div class="zoom-level-badge" id="zoomLevel">1.0×</div>
+          <div class="pan-position-badge" id="panPositionBadge">X: 0  Y: 0</div>
+
+          <div class="zoom-controls">
+            <button class="icon-btn" onclick="zoomIn()" title="Zoom in">+</button>
+            <button class="icon-btn" onclick="zoomOut()" title="Zoom out">−</button>
+            <button class="icon-btn" onclick="resetZoomAndPan()" title="Reset">⟲</button>
+          </div>
+
+          <div class="pan-controls">
+            <div></div>
+            <button class="pan-btn" onclick="panUp()">↑</button>
+            <div></div>
+            <button class="pan-btn" onclick="panLeft()">←</button>
+            <button class="pan-btn center" onclick="resetZoomAndPan()">◎</button>
+            <button class="pan-btn" onclick="panRight()">→</button>
+            <div></div>
+            <button class="pan-btn" onclick="panDown()">↓</button>
+            <div></div>
+          </div>
+
+          <div class="video-overlay" id="cameraOverlay">
+            <div class="spinner"></div>
+            <div style="font-size:12px;font-family:'DM Mono',monospace;color:var(--text2)">Initializing camera...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GALLERY PAGE -->
+    <section class="page" id="page-gallery">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Image Gallery</div>
+          <div class="page-subtitle">Static image cell analysis</div>
+        </div>
+        <div class="page-actions">
+          <button class="ctrl-btn primary" onclick="document.getElementById('imageUpload').click()">📁 Upload Image</button>
+          <button class="ctrl-btn" onclick="analyzeImage()">🔍 Analyze</button>
+        </div>
+      </div>
+
+      <div class="gallery-panel">
+        <div class="gallery-viewport">
+          <img id="imagePreview" class="hidden">
+          <canvas id="imageCanvas"></canvas>
+          <div class="gallery-placeholder" id="galleryPlaceholder">
+            <div class="gallery-placeholder-icon">📁</div>
+            <div class="gallery-placeholder-text">Select an image to analyze</div>
+          </div>
+        </div>
+        <div class="gallery-body">
+          <div class="result-row">
+            <div class="result-cell">
+              <div class="result-cell-label">Image Size</div>
+              <div class="result-cell-value" id="imageSize">—</div>
+            </div>
+            <div class="result-cell">
+              <div class="result-cell-label">Detected Cells</div>
+              <div class="result-cell-value" id="imageCells">—</div>
+            </div>
+            <div class="result-cell">
+              <div class="result-cell-label">Analysis Time</div>
+              <div class="result-cell-value" id="imageTime">—</div>
+            </div>
+            <div class="result-cell">
+              <div class="result-cell-label">Confidence</div>
+              <div class="result-cell-value" id="imageConfidence">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <input type="file" id="imageUpload" accept="image/*" class="hidden">
+    </section>
+
+    <!-- ANALYSIS PAGE -->
+    <section class="page" id="page-analysis">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Analysis History</div>
+          <div class="page-subtitle">Session readings log</div>
+        </div>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric">
+          <div class="metric-label">Live Count</div>
+          <div class="metric-value accent" id="aiTotal">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Total Readings</div>
+          <div class="metric-value" id="totalReadings">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Session Start</div>
+          <div class="metric-value" style="font-size:13px;padding-top:8px" id="sessionStart">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Engine</div>
+          <div class="metric-value" style="font-size:13px;padding-top:8px" id="engineStatus">Loading...</div>
+        </div>
+      </div>
+
+      <div class="analysis-panel">
+        <div class="section-label">Recent Readings</div>
+        <table class="history-table" id="historyTable">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Total</th>
+              <th>Source</th>
+              <th>Filter</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="4" style="color:var(--text3);text-align:center;padding:24px 0">No readings yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FILTERS PAGE -->
+    <section class="page" id="page-filters">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Image Filters</div>
+          <div class="page-subtitle">Preview and apply OpenCV filters</div>
+        </div>
+        <div class="page-actions">
+          <button class="ctrl-btn primary" onclick="document.getElementById('filterUpload').click()">Select Image</button>
+          <button class="ctrl-btn success" onclick="applyFilterToPreview()">Apply Filter</button>
+          <button class="ctrl-btn warning" onclick="saveFilteredImage()">💾 Save</button>
+        </div>
+      </div>
+
+      <div class="filter-panel">
+        <div class="filter-viewport">
+          <img id="filterPreview" class="hidden">
+          <canvas id="filterCanvas"></canvas>
+          <div class="filter-placeholder" id="filterPlaceholder" style="color:var(--text3)">
+            <div style="font-size:36px;opacity:0.3">🖼</div>
+            <div style="font-size:12px;font-family:'DM Mono',monospace">Select image to preview filters</div>
+          </div>
+        </div>
+        <div class="filter-body">
+          <div class="section-label">Filter Mode</div>
+          <div class="filter-pill-row">
+            <button class="filter-pill active" data-filter="none">None</button>
+            <button class="filter-pill" data-filter="gaussian">Gaussian</button>
+            <button class="filter-pill" data-filter="median">Median</button>
+            <button class="filter-pill" data-filter="bilateral">Bilateral</button>
+            <button class="filter-pill" data-filter="contrast">Contrast</button>
+            <button class="filter-pill" data-filter="edge">Edge</button>
+            <button class="filter-pill" data-filter="sharpen">Sharpen</button>
+            <button class="filter-pill" data-filter="threshold">Threshold</button>
+            <button class="filter-pill" data-filter="adaptive">Adaptive</button>
+          </div>
+
+          <div class="section-label" style="margin-top:16px">Parameters</div>
+          <div class="slider-row">
+            <div class="slider-group">
+              <div class="slider-label">Kernel Size <span class="slider-val" id="kernelValue">3</span></div>
+              <input type="range" id="kernelSlider" min="1" max="10" value="3">
+            </div>
+            <div class="slider-group">
+              <div class="slider-label">Sigma <span class="slider-val" id="sigmaValue">1.0</span></div>
+              <input type="range" id="sigmaSlider" min="0.1" max="5" step="0.1" value="1.0">
+            </div>
+          </div>
+        </div>
+      </div>
+      <input type="file" id="filterUpload" accept="image/*" class="hidden">
+    </section>
+
+    <!-- EXPORT PAGE -->
+    <section class="page" id="page-export">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Export Data</div>
+          <div class="page-subtitle">Save results in various formats</div>
+        </div>
+      </div>
+
+      <div class="export-grid">
+        <div class="export-card" onclick="exportCSV()">
+          <div class="export-card-icon">📊</div>
+          <div class="export-card-label">CSV</div>
+          <div class="export-card-desc">Spreadsheet data</div>
+        </div>
+        <div class="export-card" onclick="exportJSON()">
+          <div class="export-card-icon">📋</div>
+          <div class="export-card-label">JSON</div>
+          <div class="export-card-desc">Raw data</div>
+        </div>
+        <div class="export-card" onclick="exportImage()">
+          <div class="export-card-icon">🖼</div>
+          <div class="export-card-label">Image</div>
+          <div class="export-card-desc">With markers</div>
+        </div>
+        <div class="export-card" onclick="exportPDF()">
+          <div class="export-card-icon">📄</div>
+          <div class="export-card-label">PDF Report</div>
+          <div class="export-card-desc">Full report</div>
+        </div>
+      </div>
+
+      <div class="export-status-box">
+        <div class="export-status-label">Export Status</div>
+        <div class="export-status-val" id="exportStatus">Ready to export</div>
+      </div>
+    </section>
+
+    <!-- SETTINGS PAGE -->
+    <section class="page" id="page-settings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Settings</div>
+          <div class="page-subtitle">Application configuration</div>
+        </div>
+        <div class="page-actions">
+          <button class="ctrl-btn danger" onclick="resetSettings()">Reset</button>
+          <button class="ctrl-btn success" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+
+      <div class="settings-list">
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-title">Detection Sensitivity</div>
+            <div class="settings-row-desc">Adjust cell detection accuracy threshold</div>
+          </div>
+          <div class="settings-row-right">
+            <span class="settings-val" id="sensitivityValue">75%</span>
+            <input type="range" id="sensitivitySlider" min="10" max="100" value="75" style="width:120px">
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-title">Analysis Interval</div>
+            <div class="settings-row-desc">Time between frame analysis cycles</div>
+          </div>
+          <div class="settings-row-right">
+            <span class="settings-val" id="intervalValue">500ms</span>
+            <input type="range" id="intervalSlider" min="100" max="2000" step="100" value="500" style="width:120px">
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-title">Show Cell Markers</div>
+            <div class="settings-row-desc">Display detected cell boundary overlays</div>
+          </div>
+          <div class="settings-row-right">
+            <div class="toggle active" id="showMarkersToggle" onclick="toggleSetting('showMarkersToggle','showMarkers')">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-left">
+            <div class="settings-row-title">Auto-save Readings</div>
+            <div class="settings-row-desc">Automatically persist analysis results</div>
+          </div>
+          <div class="settings-row-right">
+            <div class="toggle active" id="autoSaveToggle" onclick="toggleSetting('autoSaveToggle','autoSave')">
+              <div class="toggle-knob"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HELP PAGE -->
+    <section class="page" id="page-help">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Help & Documentation</div>
+          <div class="page-subtitle">Usage guide for MicroX v1.0</div>
+        </div>
+      </div>
+
+      <div class="help-grid">
+        <div class="help-card">
+          <div class="help-card-title">Live Camera Analysis</div>
+          <div class="help-card-body">
+            Point camera at smear slide<br>
+            Ensure adequate lighting conditions<br>
+            Hold steady for accurate detection<br>
+            Use zoom controls for detailed view<br>
+            Pan controls navigate zoomed image
+          </div>
+        </div>
+        <div class="help-card">
+          <div class="help-card-title">Image Gallery Analysis</div>
+          <div class="help-card-body">
+            Upload blood smear images<br>
+            Supported formats: JPG, PNG<br>
+            Fullscreen preview available<br>
+            Apply filters for better detection<br>
+            Save filtered images for later use
+          </div>
+        </div>
+        <div class="help-card">
+          <div class="help-card-title">Image Filters</div>
+          <div class="help-card-body">
+            Gaussian: Noise reduction<br>
+            Median: Salt & pepper removal<br>
+            Edge: Highlight cell boundaries<br>
+            Threshold: Binary conversion<br>
+            Adjust kernel and sigma for tuning
+          </div>
+        </div>
+        <div class="help-card">
+          <div class="help-card-title">Interpreting Results</div>
+          <div class="help-card-body">
+            RBC: Normal 4.5–5.5M/μL<br>
+            WBC: Normal 4,000–11,000/μL<br>
+            Total Cells: Combined count in view<br>
+            Confidence: Detection accuracy %
+          </div>
+        </div>
+      </div>
+
+      <div class="help-contact">
+        <div style="font-size:13px;color:var(--text);margin-bottom:6px">Support</div>
+        <div style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;line-height:2">
+          support@microx.com &nbsp;·&nbsp; Version 1.0.0 &nbsp;·&nbsp; Last updated March 2026
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- OPENCV LOADING -->
+<div id="opencvLoader" class="opencv-loading">
+  <div class="opencv-loading-panel">
+    <div class="spinner" style="margin:0 auto 16px"></div>
+    <div class="opencv-loading-title">Initializing Engine</div>
+    <div class="opencv-loading-sub">Loading OpenCV for accurate cell detection...</div>
+    <div class="progress-track">
+      <div class="progress-fill" id="opencvProgress"></div>
+    </div>
+    <div class="progress-status" id="opencvStatus">Starting...</div>
+  </div>
+</div>
+
+<script async src="https://docs.opencv.org/4.5.2/opencv.js" onload="onOpenCvReady()"></script>
+<script>
+// ========================================
+// GLOBAL VARIABLES (unchanged)
+// ========================================
+let videoStream=null,isLiveDetection=false,liveDetectionInterval=null,currentImage=null,filterImage=null,analysisHistory=[],currentFilter='none',clinicalMode=false,isOpenCvReady=false,cv=null,zoomLevel=1.0,isFlashOn=false,videoTrack=null,panX=0,panY=0,maxPan=100,panStep=20;
+let settings={sensitivity:75,showMarkers:true,autoSave:true,analysisInterval:500};
+let filterParams={kernelSize:3,sigma:1.0,threshold1:100,threshold2:200};
+const sessionStart=new Date();
+
+// ========================================
+// PAGE NAVIGATION (new)
+// ========================================
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.textContent.toLowerCase().includes(id.slice(0,4)))n.classList.add('active');
+  });
+  if(id==='camera'&&!videoStream)startCamera();
+  if(id==='analysis')updateHistoryTable();
+}
+
+// ========================================
+// OPENCV INITIALIZATION (unchanged logic)
+// ========================================
+function onOpenCvReady(){
+  cv=window.cv;isOpenCvReady=true;
+  document.getElementById('opencvProgress').style.width='100%';
+  document.getElementById('opencvStatus').textContent='OpenCV loaded successfully';
+  document.getElementById('cvStatusDot').classList.add('active');
+  document.getElementById('cvStatusText').textContent='OpenCV ready';
+  document.getElementById('engineStatus').textContent='OpenCV';
+  setTimeout(()=>{document.getElementById('opencvLoader').style.display='none';showNotification('Computer vision engine ready','success');},500);
+}
+
+// ========================================
+// INITIALIZATION
+// ========================================
+document.addEventListener('DOMContentLoaded',function(){
+  initEventListeners();loadSavedData();updateSettingsUI();
+  document.getElementById('sessionStart').textContent=sessionStart.toLocaleTimeString();
+  startCamera();
+});
+
+function initEventListeners(){
+  document.getElementById('imageUpload').addEventListener('change',handleImageUpload);
+  document.getElementById('filterUpload').addEventListener('change',handleFilterUpload);
+  document.querySelectorAll('.filter-pill').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.filter-pill').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');currentFilter=this.dataset.filter;
+      if(filterImage)applyFilterToPreview();
+    });
+  });
+  document.getElementById('kernelSlider').addEventListener('input',function(){
+    filterParams.kernelSize=parseInt(this.value);
+    document.getElementById('kernelValue').textContent=this.value;
+    if(filterImage&&currentFilter!=='none')applyFilterToPreview();
+  });
+  document.getElementById('sigmaSlider').addEventListener('input',function(){
+    filterParams.sigma=parseFloat(this.value);
+    document.getElementById('sigmaValue').textContent=this.value;
+    if(filterImage&&currentFilter!=='none')applyFilterToPreview();
+  });
+  document.getElementById('sensitivitySlider').addEventListener('input',function(){
+    settings.sensitivity=parseInt(this.value);
+    document.getElementById('sensitivityValue').textContent=this.value+'%';
+  });
+  document.getElementById('intervalSlider').addEventListener('input',function(){
+    settings.analysisInterval=parseInt(this.value);
+    document.getElementById('intervalValue').textContent=this.value+'ms';
+    if(isLiveDetection)restartLiveDetection();
+  });
+}
+
+function toggleSetting(toggleId,settingKey){
+  const el=document.getElementById(toggleId);
+  el.classList.toggle('active');
+  settings[settingKey]=el.classList.contains('active');
+  document.getElementById(toggleId.replace('Toggle','').replace('show','show')).checked=settings[settingKey];
+}
+
+// ========================================
+// CAMERA (unchanged logic)
+// ========================================
+async function startCamera(){
+  try{
+    const constraints={video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:60}}};
+    videoStream=await navigator.mediaDevices.getUserMedia(constraints);
+    const video=document.getElementById('video');
+    const canvas=document.getElementById('canvas');
+    video.srcObject=videoStream;
+    videoTrack=videoStream.getVideoTracks()[0];
+    video.onloadedmetadata=()=>{
+      canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+      document.getElementById('cameraOverlay').classList.add('hidden');
+      showNotification('Camera ready','success');updatePanDisplay();
+    };
+    updateZoom();
+  }catch(error){
+    document.getElementById('cameraOverlay').innerHTML='<div style="text-align:center"><div style="font-size:36px;margin-bottom:12px;opacity:0.4">📷</div><div style="font-size:12px;font-family:DM Mono,monospace;color:var(--text2)">Camera access required</div></div>';
+  }
+}
+
+function stopCamera(){
+  if(videoStream){videoStream.getTracks().forEach(t=>t.stop());videoStream=null;}
+  if(isLiveDetection)stopLiveDetection();
+}
+
+// ========================================
+// ZOOM & PAN (unchanged logic)
+// ========================================
+function zoomIn(){if(zoomLevel<3.0){zoomLevel+=0.1;updateZoom();updatePanDisplay();}}
+function zoomOut(){if(zoomLevel>1.0){zoomLevel-=0.1;updateZoom();updatePanDisplay();}}
+function panUp(){panY=Math.min(panY+panStep,maxPan);updateZoom();updatePanDisplay();}
+function panDown(){panY=Math.max(panY-panStep,-maxPan);updateZoom();updatePanDisplay();}
+function panLeft(){panX=Math.max(panX-panStep,-maxPan);updateZoom();updatePanDisplay();}
+function panRight(){panX=Math.min(panX+panStep,maxPan);updateZoom();updatePanDisplay();}
+function resetZoomAndPan(){zoomLevel=1.0;panX=0;panY=0;updateZoom();updatePanDisplay();showNotification('Zoom and pan reset','info');}
+function updateZoom(){
+  const video=document.getElementById('video');
+  if(video&&video.style){
+    video.style.transform=`scale(${zoomLevel}) translate(${panX}px,${panY}px)`;
+    video.style.transition='transform 0.3s ease';
+    video.style.transformOrigin='center center';
+    document.getElementById('zoomLevel').textContent=zoomLevel.toFixed(1)+'×';
+    document.getElementById('zoomMetric').textContent=zoomLevel.toFixed(1)+'×';
+  }
+}
+function updatePanDisplay(){
+  const t=`X: ${panX}  Y: ${panY}`;
+  document.getElementById('panPosition').textContent=`Pan: ${panX}, ${panY}`;
+  document.getElementById('panPositionBadge').textContent=t;
+}
+
+// ========================================
+// FLASH (unchanged logic)
+// ========================================
+function toggleFlash(){
+  if(!videoTrack)return;isFlashOn=!isFlashOn;
+  const btn=document.getElementById('flashBtn');
+  try{
+    if(videoTrack.getCapabilities().torch){
+      videoTrack.applyConstraints({advanced:[{torch:isFlashOn}]}).then(()=>{
+        btn.textContent=isFlashOn?'🔦 Flash On':'⚡ Flash Off';
+        showNotification(isFlashOn?'Flash on':'Flash off','info');
+      }).catch(()=>showNotification('Flash not supported','warning'));
+    }else{showNotification('Flash not supported','warning');}
+  }catch(e){}
+}
+
+// ========================================
+// LIVE DETECTION (unchanged logic)
+// ========================================
+function startLiveDetection(){
+  if(!videoStream||!isOpenCvReady){showNotification('Please wait for OpenCV to load','warning');return;}
+  isLiveDetection=true;
+  const btn=document.getElementById('startDetectBtn');
+  btn.innerHTML='⏸ Stop Detection';btn.onclick=stopLiveDetection;
+  btn.className='ctrl-btn danger';
+  document.getElementById('detectionStatus').textContent='DETECTION: ON';
+  document.getElementById('detectionStatus').classList.add('active');
+  document.getElementById('detectionStatusMetric').textContent='Active';
+  document.getElementById('detectionStatusMetric').style.color='var(--green)';
+  let frameCount=0,lastTime=performance.now();
+  liveDetectionInterval=setInterval(async()=>{
+    if(!isLiveDetection)return;
+    const startTime=performance.now();
+    try{
+      const video=document.getElementById('video');
+      const canvas=document.getElementById('canvas');
+      const ctx=canvas.getContext('2d');
+      if(!video.videoWidth||!video.videoHeight)return;
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+      const detectionResults=await detectCellsWithOpenCV(imageData);
+      if(settings.showMarkers)drawDetectionResults(detectionResults,canvas);
+      updateDetectionDisplay(detectionResults,startTime);
+      frameCount++;
+      const currentTime=performance.now();
+      if(currentTime-lastTime>=1000){
+        const fps=Math.round((frameCount*1000)/(currentTime-lastTime));
+        document.getElementById('fpsDisplay').textContent=fps;
+        document.getElementById('fpsMetric').textContent=fps+' fps';
+        frameCount=0;lastTime=currentTime;
+      }
+    }catch(e){console.error('Detection error:',e);}
+  },settings.analysisInterval);
+  showNotification('Live cell detection started','success');
+}
+
+function stopLiveDetection(){
+  isLiveDetection=false;
+  const btn=document.getElementById('startDetectBtn');
+  btn.innerHTML='▶ Start Detection';btn.onclick=startLiveDetection;btn.className='ctrl-btn primary';
+  document.getElementById('detectionStatus').textContent='DETECTION: OFF';
+  document.getElementById('detectionStatus').classList.remove('active');
+  document.getElementById('detectionStatusMetric').textContent='Inactive';
+  document.getElementById('detectionStatusMetric').style.color='var(--text3)';
+  if(liveDetectionInterval){clearInterval(liveDetectionInterval);liveDetectionInterval=null;}
+  const canvas=document.getElementById('canvas');
+  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+  document.getElementById('cameraTotal').textContent='0';
+  document.getElementById('liveTotal').textContent='0';
+  showNotification('Live detection stopped','info');
+}
+
+function restartLiveDetection(){if(isLiveDetection){stopLiveDetection();setTimeout(startLiveDetection,100);}}
+
+// ========================================
+// OPENCV DETECTION (unchanged logic)
+// ========================================
+async function detectCellsWithOpenCV(imageData){
+  if(!isOpenCvReady)return simulateCellDetection(imageData);
+  try{
+    const src=cv.matFromImageData(imageData);
+    const gray=new cv.Mat(),blurred=new cv.Mat(),thresh=new cv.Mat();
+    cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(gray,blurred,new cv.Size(5,5),0);
+    cv.adaptiveThreshold(blurred,thresh,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY_INV,11,2);
+    const contours=new cv.MatVector(),hierarchy=new cv.Mat();
+    cv.findContours(thresh,contours,hierarchy,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
+    const cells=[];let total=0,rbc=0,wbc=0;
+    const sensitivity=settings.sensitivity/100,minArea=20*sensitivity,maxArea=500*sensitivity;
+    for(let i=0;i<contours.size();i++){
+      const contour=contours.get(i),area=cv.contourArea(contour);
+      if(area>minArea&&area<maxArea){
+        total++;
+        const perimeter=cv.arcLength(contour,true),circularity=(4*Math.PI*area)/(perimeter*perimeter);
+        const moments=cv.moments(contour);
+        let cx,cy;
+        if(moments.m00!==0){cx=moments.m10/moments.m00;cy=moments.m01/moments.m00;}
+        if(area<100&&circularity>0.7){rbc++;cells.push({x:cx||0,y:cy||0,radius:Math.sqrt(area/Math.PI),type:'rbc',confidence:Math.min(0.95,circularity*0.8)});}
+        else if(area>=100&&area<300&&circularity>0.5){wbc++;cells.push({x:cx||0,y:cy||0,radius:Math.sqrt(area/Math.PI),type:'wbc',confidence:Math.min(0.95,circularity*0.7)});}
+      }
+    }
+    src.delete();gray.delete();blurred.delete();thresh.delete();contours.delete();hierarchy.delete();
+    return{cells,total,rbc,wbc,timestamp:new Date().toISOString()};
+  }catch(e){console.error('OpenCV error:',e);return simulateCellDetection(imageData);}
+}
+
+function simulateCellDetection(imageData){
+  const cells=[],total=Math.floor(Math.random()*30)+10,rbc=Math.floor(total*0.85),wbc=total-rbc;
+  for(let i=0;i<total;i++){
+    const isRBC=i<rbc;
+    cells.push({x:Math.random()*imageData.width,y:Math.random()*imageData.height,radius:isRBC?5+Math.random()*3:8+Math.random()*4,type:isRBC?'rbc':'wbc',confidence:0.7+Math.random()*0.25});
+  }
+  return{cells,total,rbc,wbc,timestamp:new Date().toISOString()};
+}
+
+function drawDetectionResults(results,canvas){
+  const ctx=canvas.getContext('2d'),video=document.getElementById('video');
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  results.cells.forEach(cell=>{
+    ctx.beginPath();ctx.arc(cell.x,cell.y,cell.radius+2,0,Math.PI*2);
+    ctx.strokeStyle=cell.type==='rbc'?'#4db88a':'#5b9cf6';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.arc(cell.x,cell.y,2,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();
+  });
+}
+
+function updateDetectionDisplay(results,startTime){
+  document.getElementById('cameraTotal').textContent=results.total;
+  document.getElementById('liveTotal').textContent=results.total;
+  document.getElementById('aiTotal').textContent=results.total;
+  document.getElementById('sidebarLive').textContent=results.total;
+  if(settings.autoSave&&results.total>0)saveReading(results,'live');
+}
+
+function captureSnapshot(){
+  if(!videoStream){showNotification('Camera not active','warning');return;}
+  const canvas=document.getElementById('canvas');
+  const link=document.createElement('a');
+  link.download=`microx-snapshot-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.png`;
+  link.href=canvas.toDataURL('image/png');link.click();
+  showNotification('Snapshot captured','success');
+}
+
+// ========================================
+// GALLERY (unchanged logic)
+// ========================================
+function handleImageUpload(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const img=new Image();
+    img.onload=function(){
+      currentImage=img;
+      const preview=document.getElementById('imagePreview');
+      preview.src=e.target.result;preview.style.display='block';
+      document.getElementById('galleryPlaceholder').classList.add('hidden');
+      document.getElementById('imageSize').textContent=`${img.width}×${img.height}`;
+      setTimeout(analyzeImage,500);
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeImage(){
+  if(!currentImage){showNotification('Please select an image first','warning');return;}
+  showNotification('Analyzing image...','info');
+  const startTime=performance.now();
+  try{
+    const canvas=document.getElementById('imageCanvas');
+    const ctx=canvas.getContext('2d');
+    canvas.width=currentImage.width;canvas.height=currentImage.height;
+    ctx.drawImage(currentImage,0,0);
+    const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const detectionResults=await detectCellsWithOpenCV(imageData);
+    const processingTime=Math.round(performance.now()-startTime);
+    drawImageMarkers(detectionResults,canvas);
+    document.getElementById('imageCells').textContent=detectionResults.total;
+    document.getElementById('imageTime').textContent=processingTime+'ms';
+    document.getElementById('imageConfidence').textContent='92%';
+    document.getElementById('sidebarImage').textContent=detectionResults.total;
+    saveReading(detectionResults,'image');
+    document.getElementById('liveTotal').textContent=detectionResults.total;
+    document.getElementById('aiTotal').textContent=detectionResults.total;
+    showNotification(`Analysis complete: ${detectionResults.total} cells detected`,'success');
+  }catch(e){console.error('Analysis error:',e);showNotification('Analysis failed','error');}
+}
+
+function drawImageMarkers(results,canvas){
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(currentImage,0,0);
+  results.cells.forEach(cell=>{
+    ctx.beginPath();ctx.arc(cell.x,cell.y,cell.radius+2,0,Math.PI*2);
+    ctx.strokeStyle=cell.type==='rbc'?'#4db88a':'#5b9cf6';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.arc(cell.x,cell.y,2,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();
+    ctx.fillStyle=cell.type==='rbc'?'#4db88a':'#5b9cf6';ctx.font='10px DM Mono';
+    ctx.fillText(`${Math.round(cell.confidence*100)}%`,cell.x-10,cell.y+cell.radius+12);
+  });
+}
+
+// ========================================
+// FILTERS (unchanged logic)
+// ========================================
+function handleFilterUpload(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const img=new Image();
+    img.onload=function(){
+      filterImage=img;
+      const preview=document.getElementById('filterPreview');
+      preview.src=e.target.result;preview.style.display='block';
+      document.getElementById('filterPlaceholder').classList.add('hidden');
+      applyFilterToPreview();showNotification('Image loaded for filter preview','info');
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function applyFilterToPreview(){
+  if(!filterImage){showNotification('Please select an image first','warning');return;}
+  const canvas=document.getElementById('filterCanvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=filterImage.width;canvas.height=filterImage.height;
+  try{
+    ctx.drawImage(filterImage,0,0);
+    if(currentFilter==='none'){
+      document.getElementById('filterPreview').style.display='block';
+      canvas.style.display='none';return;
+    }
+    const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const filtered=await applyOpenCVFilter(imageData,currentFilter);
+    cv.imshow(canvas,filtered);
+    canvas.style.display='block';document.getElementById('filterPreview').style.display='none';
+    filtered.delete();showNotification(`${currentFilter} filter applied`,'success');
+  }catch(e){console.error('Filter error:',e);showNotification('Failed to apply filter','error');}
+}
+
+function saveFilteredImage(){
+  if(!filterImage){showNotification('Please select and apply filter first','warning');return;}
+  const canvas=document.getElementById('filterCanvas');
+  if(canvas.style.display==='none'){
+    const link=document.createElement('a');
+    link.download=`microx-original-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.png`;
+    link.href=filterImage.src;link.click();showNotification('Original image saved','success');
+  }else{
+    const link=document.createElement('a');
+    link.download=`microx-${currentFilter}-filtered-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.png`;
+    link.href=canvas.toDataURL('image/png');link.click();
+    showNotification(`Filtered image (${currentFilter}) saved`,'success');
+  }
+}
+
+async function applyOpenCVFilter(imageData,filterType){
+  if(!isOpenCvReady)return null;
+  const src=cv.matFromImageData(imageData),result=new cv.Mat();
+  try{
+    switch(filterType){
+      case'gaussian':cv.GaussianBlur(src,result,new cv.Size(filterParams.kernelSize*2+1,filterParams.kernelSize*2+1),filterParams.sigma);break;
+      case'median':cv.medianBlur(src,result,filterParams.kernelSize*2+1);break;
+      case'bilateral':cv.cvtColor(src,result,cv.COLOR_RGBA2RGB);cv.bilateralFilter(result,result,9,filterParams.sigma*25,filterParams.sigma*5);cv.cvtColor(result,result,cv.COLOR_RGB2RGBA);break;
+      case'contrast':cv.convertScaleAbs(src,result,1.5,0);break;
+      case'edge':{const gray=new cv.Mat();cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);cv.Canny(gray,result,filterParams.threshold1,filterParams.threshold2);cv.cvtColor(result,result,cv.COLOR_GRAY2RGBA);gray.delete();break;}
+      case'sharpen':{const kernel=cv.matFromArray(3,3,cv.CV_32F,[0,-1,0,-1,5,-1,0,-1,0]);cv.filter2D(src,result,-1,kernel);kernel.delete();break;}
+      case'threshold':cv.cvtColor(src,result,cv.COLOR_RGBA2GRAY);cv.threshold(result,result,127,255,cv.THRESH_BINARY);cv.cvtColor(result,result,cv.COLOR_GRAY2RGBA);break;
+      case'adaptive':cv.cvtColor(src,result,cv.COLOR_RGBA2GRAY);cv.adaptiveThreshold(result,result,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY,11,2);cv.cvtColor(result,result,cv.COLOR_GRAY2RGBA);break;
+      default:src.copyTo(result);
+    }
+    src.delete();return result;
+  }catch(e){src.delete();result.delete();throw e;}
+}
+
+// ========================================
+// DATA (unchanged logic)
+// ========================================
+function saveReading(results,source){
+  const reading={timestamp:new Date().toISOString(),totalCells:results.total,rbcCount:results.rbc,wbcCount:results.wbc,source,filter:currentFilter};
+  analysisHistory.push(reading);
+  if(analysisHistory.length>100)analysisHistory=analysisHistory.slice(-100);
+  document.getElementById('historyBadge').textContent=analysisHistory.length;
+  document.getElementById('sidebarReadings').textContent=analysisHistory.length;
+  document.getElementById('totalReadings').textContent=analysisHistory.length;
+  saveData();
+}
+
+function updateHistoryTable(){
+  const tbody=document.getElementById('historyBody');
+  if(analysisHistory.length===0){
+    tbody.innerHTML='<tr><td colspan="4" style="color:var(--text3);text-align:center;padding:24px 0;font-family:DM Mono,monospace;font-size:12px">No readings yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML=analysisHistory.slice().reverse().slice(0,20).map(r=>`
+    <tr>
+      <td>${new Date(r.timestamp).toLocaleTimeString()}</td>
+      <td style="color:var(--accent)">${r.totalCells}</td>
+      <td>${r.source}</td>
+      <td>${r.filter}</td>
+    </tr>
+  `).join('');
+}
+
+// ========================================
+// EXPORT (unchanged logic)
+// ========================================
+function exportCSV(){
+  if(analysisHistory.length===0){showNotification('No data to export','warning');return;}
+  let csv='Timestamp,Total Cells,RBC Count,WBC Count,Source,Filter\n';
+  analysisHistory.forEach(r=>{csv+=`${r.timestamp},${r.totalCells},${r.rbcCount},${r.wbcCount},${r.source},${r.filter}\n`;});
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`microx-data-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  document.getElementById('exportStatus').textContent='CSV exported successfully';
+  showNotification('Data exported as CSV','success');
+}
+
+function exportJSON(){
+  if(analysisHistory.length===0){showNotification('No data to export','warning');return;}
+  const data={metadata:{app:'MicroX',version:'1.0',exportDate:new Date().toISOString()},readings:analysisHistory,settings};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`microx-data-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  document.getElementById('exportStatus').textContent='JSON exported successfully';
+  showNotification('Data exported as JSON','success');
+}
+
+function exportImage(){
+  let canvas;
+  if(currentImage)canvas=document.getElementById('imageCanvas');
+  else if(isLiveDetection)canvas=document.getElementById('canvas');
+  else{showNotification('No image available for export','warning');return;}
+  const link=document.createElement('a');
+  link.download=`microx-analysis-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.png`;
+  link.href=canvas.toDataURL('image/png');document.body.appendChild(link);link.click();document.body.removeChild(link);
+  document.getElementById('exportStatus').textContent='Image exported successfully';
+  showNotification('Image exported with markers','success');
+}
+
+function exportPDF(){
+  document.getElementById('exportStatus').textContent='Generating PDF report...';
+  setTimeout(()=>{document.getElementById('exportStatus').textContent='PDF report saved';showNotification('PDF report generated','success');},2000);
+}
+
+// ========================================
+// SETTINGS (unchanged logic, new toggle UI)
+// ========================================
+function updateSettingsUI(){
+  document.getElementById('sensitivitySlider').value=settings.sensitivity;
+  document.getElementById('sensitivityValue').textContent=settings.sensitivity+'%';
+  document.getElementById('intervalSlider').value=settings.analysisInterval;
+  document.getElementById('intervalValue').textContent=settings.analysisInterval+'ms';
+  if(!settings.showMarkers)document.getElementById('showMarkersToggle').classList.remove('active');
+  if(!settings.autoSave)document.getElementById('autoSaveToggle').classList.remove('active');
+}
+
+function saveSettings(){
+  settings.sensitivity=parseInt(document.getElementById('sensitivitySlider').value);
+  settings.analysisInterval=parseInt(document.getElementById('intervalSlider').value);
+  settings.showMarkers=document.getElementById('showMarkersToggle').classList.contains('active');
+  settings.autoSave=document.getElementById('autoSaveToggle').classList.contains('active');
+  saveData();showNotification('Settings saved','success');
+}
+
+function resetSettings(){
+  if(confirm('Reset all settings to defaults?')){
+    settings={sensitivity:75,showMarkers:true,autoSave:true,analysisInterval:500};
+    updateSettingsUI();showNotification('Settings reset','info');
+  }
+}
+
+// ========================================
+// MODE TOGGLE (unchanged logic)
+// ========================================
+function toggleClinicalMode(){
+  clinicalMode=!clinicalMode;
+  document.body.classList.toggle('dark-mode',clinicalMode);
+  document.getElementById('modeBtn').textContent=clinicalMode?'🌑 Dark':'☀ Light';
+  showNotification(clinicalMode?'Light mode enabled':'Dark mode enabled','info');
+  saveData();
+}
+
+// ========================================
+// ACTION BUTTONS (unchanged logic)
+// ========================================
+function goHome(){
+  showPage('camera');
+  if(isLiveDetection)stopLiveDetection();
+  showNotification('Returned to home','info');
+}
+
+function startAnalysis(){
+  showPage('camera');
+  setTimeout(()=>{if(!isLiveDetection)startLiveDetection();},500);
+}
+
+function stopAnalysis(){
+  if(isLiveDetection){stopLiveDetection();showNotification('Analysis stopped','info');}
+  else{showNotification('No analysis running','warning');}
+}
+
+function exitApp(){
+  if(confirm('Are you sure you want to exit?')){
+    if(isLiveDetection)stopLiveDetection();
+    if(videoStream)videoStream.getTracks().forEach(t=>t.stop());
+    saveData();
+    showNotification('Closing application...','info');
+    setTimeout(()=>{
+      document.body.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0c10"><div style="text-align:center;color:#9ea3af;font-family:DM Sans,sans-serif"><div style="font-family:Playfair Display,serif;font-size:28px;color:#c8a96e;margin-bottom:12px">MicroX</div><div style="font-size:13px">Application closed. You may close this tab.</div></div></div>';
+    },1000);
+  }
+}
+
+// ========================================
+// NOTIFICATION (restyled)
+// ========================================
+function showNotification(message,type='info'){
+  document.querySelectorAll('.notif').forEach(n=>n.remove());
+  const n=document.createElement('div');
+  n.className='notif '+(type||'');
+  n.textContent=message;n.style.animation='notifIn 0.2s ease-out';
+  document.body.appendChild(n);
+  setTimeout(()=>{n.style.animation='notifOut 0.2s ease-in';setTimeout(()=>{if(n.parentNode)n.remove();},200);},3000);
+}
+
+// Add notification keyframes
+const s=document.createElement('style');
+s.textContent='@keyframes notifIn{from{top:56px;opacity:0}to{top:68px;opacity:1}}@keyframes notifOut{from{top:68px;opacity:1}to{top:56px;opacity:0}}';
+document.head.appendChild(s);
+
+// ========================================
+// DATA PERSISTENCE (unchanged logic)
+// ========================================
+function saveData(){
+  try{localStorage.setItem('microx_data',JSON.stringify({settings,analysisHistory,clinicalMode}));}catch(e){}
+}
+function loadSavedData(){
+  try{
+    const saved=localStorage.getItem('microx_data');
+    if(saved){
+      const data=JSON.parse(saved);
+      settings=data.settings||settings;
+      analysisHistory=data.analysisHistory||[];
+      clinicalMode=data.clinicalMode||false;
+      if(clinicalMode)document.body.classList.add('dark-mode');
+      document.getElementById('historyBadge').textContent=analysisHistory.length;
+      document.getElementById('sidebarReadings').textContent=analysisHistory.length;
+      document.getElementById('totalReadings').textContent=analysisHistory.length;
+    }
+  }catch(e){}
+}
+</script>
+</body>
+</html>
